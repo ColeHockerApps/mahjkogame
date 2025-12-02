@@ -11,6 +11,11 @@ struct MahjKoApp: App {
     @StateObject private var echo = StarEcho()
     @StateObject private var flow = FlowLines()
 
+    @StateObject private var streaks = StreakEngine()
+    @StateObject private var mood = MoodEngine()
+    @StateObject private var quests = QuestEngine()
+    @StateObject private var daylight = DaylightEngine()
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -21,6 +26,10 @@ struct MahjKoApp: App {
                 .environmentObject(ledger)
                 .environmentObject(echo)
                 .environmentObject(flow)
+                .environmentObject(streaks)
+                .environmentObject(mood)
+                .environmentObject(quests)
+                .environmentObject(daylight)
         }
     }
 }
@@ -35,6 +44,8 @@ struct RootView: View {
                 .ignoresSafeArea()
 
             switch flow.current {
+            case .onboarding:
+                OnboardingScreen()
             case .hub:
                 HubScreen()
             case .board:

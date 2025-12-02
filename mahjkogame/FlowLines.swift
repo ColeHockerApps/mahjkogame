@@ -2,6 +2,7 @@ import Combine
 import SwiftUI
 
 enum KoRoute: Equatable {
+    case onboarding
     case hub
     case board
     case settings
@@ -10,7 +11,21 @@ enum KoRoute: Equatable {
 }
 
 final class FlowLines: ObservableObject {
-    @Published var current: KoRoute = .hub
+    @Published var current: KoRoute
+
+    init() {
+        let seen = UserDefaults.standard.bool(forKey: "onboarding.seen")
+        current = seen ? .hub : .onboarding
+    }
+
+    func startOnboarding() {
+        current = .onboarding
+    }
+
+    func finishOnboarding() {
+        UserDefaults.standard.set(true, forKey: "onboarding.seen")
+        current = .hub
+    }
 
     func goHub() {
         current = .hub

@@ -5,46 +5,29 @@ struct HubScreen: View {
     @EnvironmentObject private var theme: KoTheme
     @EnvironmentObject private var flow: FlowLines
     @EnvironmentObject private var echo: StarEcho
+    @EnvironmentObject private var streaks: StreakEngine
+    @EnvironmentObject private var quests: QuestEngine
+    @EnvironmentObject private var daylight: DaylightEngine
 
     @StateObject private var vm = HubViewModel()
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.98, green: 0.94, blue: 0.88),
-                    Color(red: 0.96, green: 0.90, blue: 0.82),
-                    Color(red: 0.94, green: 0.88, blue: 0.80)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            backgroundLayer
+            GlowLayer().opacity(0.28)
 
-            RadialGradient(
-                colors: [
-                    Color.white.opacity(0.55),
-                    Color.clear
-                ],
-                center: .center,
-                startRadius: 80,
-                endRadius: 420
-            )
-            .blendMode(.softLight)
-            .ignoresSafeArea()
-
-            GlowLayer()
-                .opacity(0.35)
-
-            VStack(spacing: 24) {
+            VStack(spacing: 22) {
                 topButtons
-                    .padding(.top, 20)
-                    .padding(.horizontal, 24)
+                    .padding(.top, 22)
+                    .padding(.horizontal, 22)
 
-                Spacer(minLength: 10)
+                Spacer(minLength: 12)
 
-                logoBlock
-                    .padding(.horizontal, 24)
+                streakSection
+                    .padding(.horizontal, 26)
+
+                questsSection
+                    .padding(.horizontal, 26)
 
                 playButton
                     .padding(.top, 8)
@@ -52,7 +35,7 @@ struct HubScreen: View {
                 if !vm.tagline.isEmpty {
                     Text(vm.tagline)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(KoPalette.textSecondary)
+                        .foregroundColor(Color.white.opacity(0.75))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
@@ -62,101 +45,209 @@ struct HubScreen: View {
                 if !vm.todaySummary.isEmpty {
                     Text(vm.todaySummary)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(KoPalette.textMuted)
-                        .padding(.bottom, 10)
+                        .foregroundColor(Color.white.opacity(0.6))
+                        .padding(.bottom, 12)
                 }
             }
             .opacity(vm.fadeIn ? 1 : 0)
             .animation(.easeOut(duration: 0.35), value: vm.fadeIn)
         }
         .onAppear {
+            daylight.refreshNow()
             vm.onAppear(echo: echo)
+            quests.syncStreakValue(streaks.currentStreak)
         }
     }
 
-    // MARK: - Improved top buttons
+    // MARK: Background
+
+    private var backgroundLayer: some View {
+        LinearGradient(
+            colors: [
+                Color(red: 0.10, green: 0.10, blue: 0.14),
+                Color(red: 0.06, green: 0.06, blue: 0.10)
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+        .ignoresSafeArea()
+    }
+
+    // MARK: Top buttons
 
     private var topButtons: some View {
         HStack(spacing: 14) {
-
-            headerButton(symbol: KoIcons.gear, label: "Settings") {
-                vm.openSettings(flow: flow)
-            }
-
-            headerButton(symbol: KoIcons.book, label: "Rules") {
+            topButton(symbol: KoIcons.book, label: "Rules") {
                 vm.openRules(flow: flow)
             }
 
-            headerButton(symbol: KoIcons.shield, label: "Privacy") {
+            topButton(symbol: KoIcons.shield, label: "Privacy") {
                 vm.openPolicy(flow: flow)
             }
 
             Spacer()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func headerButton(symbol: String, label: String, action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
+    private func topButton(symbol: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(KoPalette.textPrimary)
-
+                    .font(.system(size: 16, weight: .semibold))
                 Text(label)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(KoPalette.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .font(.system(size: 14, weight: .semibold))
             }
+            .foregroundColor(.white)
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .frame(minWidth: 110)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(red: 0.92, green: 0.88, blue: 0.82))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.black.opacity(0.25), lineWidth: 1.2)
-                    )
-                    .shadow(color: Color.black.opacity(0.18), radius: 6, x: 0, y: 3)
+                    .fill(Color.white.opacity(0.10))
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.22), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.55), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(.plain)
     }
-    // MARK: - Logo
 
-    private var logoBlock: some View {
-        Image("logo2")
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 260)
-            .scaleEffect(vm.logoScale)
-            .shadow(color: KoPalette.softShadow, radius: 16, x: 0, y: 8)
-            .frame(maxWidth: .infinity)
+    // MARK: Streak section
+
+    private var streakSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Daily streak")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                if streaks.currentStreak > 0 {
+                    Text("\(streaks.currentStreak) day\(streaks.currentStreak == 1 ? "" : "s")")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.7))
+                }
+            }
+
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                let ratio = streaks.streakProgress(target: 7)
+
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.18))
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [KoPalette.accent, KoPalette.accentDeep],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(0, width * ratio))
+                }
+            }
+            .frame(height: 10)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.12))
+        )
+        .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
     }
 
-    // MARK: - Play button
+    // MARK: Quests
+
+    private var questsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if !quests.quests.isEmpty {
+                Text("Today’s tiny goals")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            ForEach(quests.quests) { quest in
+                questRow(quest)
+            }
+        }
+        .padding(.vertical, quests.quests.isEmpty ? 0 : 10)
+        .padding(.horizontal, quests.quests.isEmpty ? 0 : 14)
+        .background(
+            Group {
+                if quests.quests.isEmpty {
+                    Color.clear
+                } else {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.white.opacity(0.10))
+                }
+            }
+        )
+        .shadow(
+            color: quests.quests.isEmpty ? .clear : Color.black.opacity(0.25),
+            radius: 10,
+            x: 0,
+            y: 5
+        )
+    }
+
+    private func questRow(_ quest: DailyQuest) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(quest.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Text("\(min(quest.progress, quest.target))/\(quest.target)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color.white.opacity(0.75))
+            }
+
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                let ratio = quest.progressRatio
+
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.20))
+                    Capsule()
+                        .fill(
+                            quest.isCompleted
+                            ? Color.green.opacity(0.85)
+                            : KoPalette.accentDeep.opacity(0.9)
+                        )
+                        .frame(width: max(0, width * ratio))
+                }
+            }
+            .frame(height: 8)
+
+            Text(quest.detail)
+                .font(.system(size: 12))
+                .foregroundColor(Color.white.opacity(0.55))
+                .lineLimit(2)
+        }
+        .padding(.vertical, 6)
+    }
+
+    // MARK: Play button
 
     private var playButton: some View {
         Button {
-            vm.play(flow: flow, echo: echo)
+            vm.play(flow: flow, echo: echo, streaks: streaks, quests: quests)
         } label: {
             Text("Play")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(KoPalette.textPrimary)
+                .foregroundColor(.white)
                 .padding(.horizontal, 40)
                 .padding(.vertical, 14)
                 .background(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: 26)
                         .fill(
                             LinearGradient(
-                                colors: [
-                                    KoPalette.accent,
-                                    KoPalette.accentDeep
-                                ],
+                                colors: [KoPalette.accent, KoPalette.accentDeep],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -178,7 +269,7 @@ struct HubScreen: View {
     }
 }
 
-// MARK: - ViewModel
+// MARK: ViewModel
 
 final class HubViewModel: ObservableObject {
     @Published var fadeIn: Bool = false
@@ -198,10 +289,6 @@ final class HubViewModel: ObservableObject {
     func onAppear(echo: StarEcho) {
         fadeIn = true
 
-        withAnimation(.easeOut(duration: 0.4)) {
-            logoScale = 1.0
-        }
-
         withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
             playPulse = true
         }
@@ -216,16 +303,14 @@ final class HubViewModel: ObservableObject {
         }
     }
 
-    func play(flow: FlowLines, echo: StarEcho) {
+    func play(flow: FlowLines, echo: StarEcho, streaks: StreakEngine, quests: QuestEngine) {
         KoHaptics.shared.tapMedium()
+        streaks.registerToday()
+        quests.registerBoardOpened()
+        quests.syncStreakValue(streaks.currentStreak)
         echo.registerSession()
         echo.maybeAskForReview()
         flow.goBoard()
-    }
-
-    func openSettings(flow: FlowLines) {
-        KoHaptics.shared.tapLight()
-        flow.goSettings()
     }
 
     func openRules(flow: FlowLines) {
