@@ -8,6 +8,8 @@ enum KoRoute: Equatable {
     case settings
     case rules
     case policy
+    case tutorial
+    case dailyPopup
 }
 
 final class FlowLines: ObservableObject {
@@ -45,6 +47,14 @@ final class FlowLines: ObservableObject {
 
     func goPolicy() {
         current = .policy
+    }
+
+    func goTutorial() {
+        current = .tutorial
+    }
+
+    func goDailyPopup() {
+        current = .dailyPopup
     }
 
     func closeCurrent() {

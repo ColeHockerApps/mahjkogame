@@ -46,16 +46,27 @@ struct RootView: View {
             switch flow.current {
             case .onboarding:
                 OnboardingScreen()
+
             case .hub:
                 HubScreen()
+
             case .board:
                 BoardStage()
+
             case .settings:
                 SettingsScreen()
+
             case .rules:
                 RulesScreen()
+
             case .policy:
                 PolicyScreen()
+
+            case .tutorial:
+                TutorialGameScreen()
+
+            case .dailyPopup:
+                DailyPopupScreen()
             }
         }
         .animation(.easeInOut(duration: 0.25), value: flow.current)

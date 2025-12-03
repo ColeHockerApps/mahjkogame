@@ -32,6 +32,9 @@ struct HubScreen: View {
                 playButton
                     .padding(.top, 8)
 
+                tutorialButton
+                    .padding(.top, 4)
+
                 if !vm.tagline.isEmpty {
                     Text(vm.tagline)
                         .font(.system(size: 13, weight: .medium))
@@ -59,7 +62,7 @@ struct HubScreen: View {
         }
     }
 
-    // MARK: Background
+    // Background
 
     private var backgroundLayer: some View {
         LinearGradient(
@@ -73,7 +76,7 @@ struct HubScreen: View {
         .ignoresSafeArea()
     }
 
-    // MARK: Top buttons
+    // Top buttons
 
     private var topButtons: some View {
         HStack(spacing: 14) {
@@ -113,7 +116,7 @@ struct HubScreen: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: Streak section
+    // Streak section
 
     private var streakSection: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -159,7 +162,7 @@ struct HubScreen: View {
         .shadow(color: Color.black.opacity(0.25), radius: 10, x: 0, y: 6)
     }
 
-    // MARK: Quests
+    // Quests
 
     private var questsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -232,7 +235,7 @@ struct HubScreen: View {
         .padding(.vertical, 6)
     }
 
-    // MARK: Play button
+    // Play button
 
     private var playButton: some View {
         Button {
@@ -267,9 +270,36 @@ struct HubScreen: View {
             value: vm.playPulse
         )
     }
+
+    // Tutorial button
+
+    private var tutorialButton: some View {
+        Button {
+            vm.openTutorial(flow: flow)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: KoIcons.book)
+                    .font(.system(size: 15, weight: .semibold))
+                Text("Mahjong basics")
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.white.opacity(0.55), lineWidth: 1.4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
 }
 
-// MARK: ViewModel
+// ViewModel
 
 final class HubViewModel: ObservableObject {
     @Published var fadeIn: Bool = false
@@ -321,5 +351,10 @@ final class HubViewModel: ObservableObject {
     func openPolicy(flow: FlowLines) {
         KoHaptics.shared.tapSoft()
         flow.goPolicy()
+    }
+
+    func openTutorial(flow: FlowLines) {
+        KoHaptics.shared.tapLight()
+        flow.goTutorial()
     }
 }

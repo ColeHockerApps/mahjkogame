@@ -19,6 +19,7 @@ final class StarEcho: ObservableObject {
         if last == nil || Calendar.current.isDate(last!, inSameDayAs: today) == false {
             defaults.set(today, forKey: lastDateKey)
             sessionCount = 0
+            defaults.set(sessionCount, forKey: sessionKey)
         } else {
             sessionCount = defaults.integer(forKey: sessionKey)
         }
