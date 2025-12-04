@@ -11,7 +11,7 @@ final class KoHaptics: ObservableObject {
     private let soft = UIImpactFeedbackGenerator(style: .soft)
     private let rigid = UIImpactFeedbackGenerator(style: .rigid)
     private let notice = UINotificationFeedbackGenerator()
-
+ 
     func tapLight() {
         light.prepare()
         light.impactOccurred(intensity: 0.55)
